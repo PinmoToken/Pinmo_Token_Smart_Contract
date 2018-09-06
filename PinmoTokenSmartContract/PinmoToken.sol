@@ -1,820 +1,776 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.18;
 
-/**
- * ERC-20 standard token interface as defined at:
- * <a href="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md">here</a>.
- */
+// ----------------------------------------------------------------------------
+// PinMo contract
+// 
+// Symbol      : PMC
+// Name        : PinMo Crown
+// Total supply: 100,000
+// Decimals    : 0
+// 
+// Symbol      : PMT
+// Name        : PinMo Token
+// Total supply: 273,000,000
+// Decimals    : 18
+// ----------------------------------------------------------------------------
 
-contract Token {
-    
-    /**
-     * Function to get the total amount of tokens in circulation.
-     * 
-     * @return the total amount of tokens in circulation
-     */
 
-    function totalSupply () public view returns (uint256 supply);
-    
-    /**
-     * Function to get the number of tokens currently belonging to a given 
-     * owner.
-     * 
-     * @param _owner is the address on which the current tokens are going to be 
-     * obtained.
-     * 
-     * @return the total number of tokens currently in the owner's address
-     */
-     
-    function balanceOf (address _owner) public view returns (uint256 balance);
-    
-    /**
-     * Obtain the total tokens that the spender is able to use for a transfer
-     * 
-     * @param _owner is the address on which the current tokens are going to be
-     * transfer from.
-     * 
-     * @param _spender is the address on which the current tokens are going to
-     * be transfer to.
-     * 
-     * @return the number of tokens given to the spender that are currently
-     * allowed to transfer from a given owner
-     */ 
-    
-    function allowance (address _owner, address _spender)
-        public view returns (uint256 remaining);
-        
-    /**
-     * Approves the transaction of a given number of tokens from the sender
-     * 
-     * @param _spender address of the person transfering the tokens
-     * 
-     * @param _value the amount of tokens that are subject to the transfer
-     * 
-     * @return true if the token transfer was approved and false if not
-     */ 
-    
-    function approve (address _spender, uint256 _value)
-        public returns (bool success);
-        
-    /**
-     * Transfer a number of tokens from the sender address to the given recipient
-     * 
-     * @param _to address where the tokens are going to be transfer
-     * 
-     * @param _value total number of tokens that are going to be transfer
-     * 
-     * @return true if the token transfer was successfull and false if it fail
-     * 
-     */ 
-
-    function transfer (address _to, uint256 _value)
-        public returns (bool success);
-        
-    /**
-     * Transfer the given number of tokens from the owner to the recipient
-     * 
-     * @param _from the address where the tokens are taken from
-     * 
-     * @param _to the address where the tokens are going to be transfer to
-     * 
-     * @param _value total number of tokens that are going to be transfer
-     * 
-     * @return true if the token transfer was successfull and false if it fail
-     */
-        
-    function transferFrom (address _from, address _to, uint256 _value)
-        public returns (bool success);
-        
-    /**
-     * Event to log when tokens are transfer from one user to another
-     * 
-     * @param _from address of the original owner of the tokens
-     * 
-     * @param _to address of the new owner of the tokens
-     * 
-     * @param _value total amount of tokens that were transfer in this
-     * transaction
-     */ 
-        
-    event Transfer (address indexed _from, address indexed _to, uint256 _value);
-    
-    /**
-     * Event to log when the owner approved the transfer of the tokens to a
-     * given owner
-     * 
-     * @param _owner address of the original owner of the tokens that got
-     * trasnfered
-     * 
-     * @param _spender address of who was allowed to transfer the tokens that
-     * belonged to the owner
-     * 
-     * @param _value number of tokens that were approved to be transfer by the
-     * original owner
-     *  
-     */ 
-    
-    event Approval (address indexed _owner, address indexed _spender, 
-    uint256 _value);
-
-}
-
-pragma solidity ^0.4.24;
-
-/**
- * Math operations with safety checks that throw on error
- */ 
-
+// ----------------------------------------------------------------------------
+// Safe maths
+// ----------------------------------------------------------------------------
 contract SafeMath {
-  uint256 constant private MAX_UINT256 =
-    0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-    
-    /**
-     * Function to add two uint246 values, throw in case of overflow.
-     * 
-     * @param x first value to be added
-     * 
-     * @param y second value to be added
-     * 
-     * @return the total amount of x + y
-     */ 
-    
-    function addition (uint256 x, uint256 y)
-      pure internal
-      returns (uint256 z) {
-        assert (x <= MAX_UINT256 - y);
-        return x + y;
-      }
-      
-      /**
-       * Function to substract two uint256 values, throw in case of overflow.
-       * 
-       * @param x first value to be substracted from
-       * 
-       * @param y second value to be substracted from
-       * 
-       * @return the total amount of x - y
-       */ 
-       
-    function substract (uint256 x, uint256 y)
-      pure internal
-      returns (uint256 z) {
-        assert (x >= y);
-        return x - y;
-      }
-      
-      /**
-       * Function to multiply two uint256 values, throw in case of overflow.
-       * 
-       * @param x first value to be multiplied from
-       * 
-       * @param y second value to be multiplied from
-       * 
-       * @return the toal amoun of x by y
-       */ 
-    function multiply (uint256 x, uint256 y)
-      pure internal
-      returns (uint256 z) {
-        if (y == 0) return 0; // Prevent division by zero at the next line
-        assert (x <= MAX_UINT256 / y);
-        return x * y;
-      }
+    function safeAdd(uint a, uint b) public pure returns (uint c) {
+        c = a + b;
+        require(c >= a);
+    }
+    function safeSub(uint a, uint b) public pure returns (uint c) {
+        require(b <= a);
+        c = a - b;
+    }
+    function safeMul(uint a, uint b) public pure returns (uint c) {
+        c = a * b;
+        require(a == 0 || c / a == b);
+    }
+    function safeDiv(uint a, uint b) public pure returns (uint c) {
+        require(b > 0);
+        c = a / b;
+    }
 }
 
-/**
- * Abstract Token SmartContract that could be used as a base contract for 
- * ERC-20 token contracts
- */ 
-contract AbstractToken is Token, SafeMath {
-    
-    /**
-     * Create a new Abstract Token Contract
-     * Constructor that does nothing
-     */ 
-    
-  constructor () public {}
-  
-  /**
-   * Function to get the number of tokens currently belonging to a given owner
-   * 
-   * @param _owner is the address on which the current tokens are going to 
-   * be obtained.
-   * 
-   * @return number of tokens currently belonging to the owner of the 
-   * address (owner)   
-   */ 
-  
-    function balanceOf (address _owner) public view returns (uint256 balance) {
-        return accounts [_owner];
-      }
-      
-    /**
-     * Function to allow the given spender to transfer a given amount of 
-     * tokens from msg.sender
-     * 
-     * @param _spender address to allow the owner to transfer the amounnt 
-     * of tokens given
-     * 
-     * @param _value number of tokens to allow to transfer
-     * 
-     * @return true if token transfer  was successfull or not
-     */ 
-    function approve (address _spender, uint256 _value)
-  public returns (bool success) {
-    allowances [msg.sender][_spender] = _value;
-    emit Approval (msg.sender, _spender, _value);
 
-    return true;
-  }
-    
-    /**
-     * Function to transfer a given amount of tokens from message sender to 
-     * a given recipient
-     * 
-     * @param _to address to transfer tokens to the owner of
-     * 
-     * @param _value amount of tokens that are going to be subject to this 
-     * transaction
-     * 
-     * @return true if the tokens were trasnfered successfuly or 
-     * false if it fail
-     */ 
-    function transfer (address _to, uint256 _value)
-  public returns (bool success) {
-    uint256 fromBalance = accounts [msg.sender];
-    if (fromBalance < _value) return false;
-    if (_value > 0 && msg.sender != _to) {
-      accounts [msg.sender] = substract (fromBalance, _value);
-      accounts [_to] = addition (accounts [_to], _value);
-    }
-    emit Transfer (msg.sender, _to, _value);
-    return true;
-  }
-  
-  /**
-   * Function to transfer given number of tokens from a given owner to a 
-   * given recipient
-   * 
-   * @param _from address to transfer tokens from the owner of 
-   * 
-   * @param _to address where the tokens are going to be transfer to
-   * 
-   * @param _value total number of tokens that are going to be subject  
-   * to this transaction
-   * 
-   * @return true if the tokens were transfered scucessfuly or false it it fail
-   */ 
-  function transferFrom (address _from, address _to, uint256 _value)
-  public returns (bool success) {
-    uint256 spenderAllowance = allowances [_from][msg.sender];
-    if (spenderAllowance < _value) return false;
-    uint256 fromBalance = accounts [_from];
-    if (fromBalance < _value) return false;
+// ----------------------------------------------------------------------------
+// ERC Token Standard #20 Interface
+// ----------------------------------------------------------------------------
+contract ERC20Interface {
+    function totalSupply() public constant returns (uint);
+    function balanceOf(address tokenOwner) public constant returns (uint balance);
+    function allowance(address tokenOwner, address spender) public constant returns (uint remaining);
+    function transfer(address to, uint tokens) public returns (bool success);
+    function approve(address spender, uint tokens) public returns (bool success);
+    function transferFrom(address from, address to, uint tokens) public returns (bool success);
 
-    allowances [_from][msg.sender] =
-      substract (spenderAllowance, _value);
-
-    if (_value > 0 && _from != _to) {
-      accounts [_from] = substract (fromBalance, _value);
-      accounts [_to] = addition (accounts [_to], _value);
-    }
-    emit Transfer (_from, _to, _value);
-    return true;
-  }
-  
-  /**
-   * Function to know how many tokens a given spender is currently allowed 
-   * to transfer from given owner
-   * 
-   * @param _owner address to get number of tokens allowed to be transferred 
-   * from the owner of
-   * 
-   * @param _spender address to get number of tokens allowed to be transferred 
-   * by the owner of
-   * 
-   * @return number of tokens given spender is currently allowed to transfer 
-   * from given owner
-   */ 
-  function allowance (address _owner, address _spender)
-  public view returns (uint256 remaining) {
-    return allowances [_owner][_spender];
-  }
-  
-  /**
-   * Mapping from addresses of token holders to the numbers of tokens belonging 
-   * to these token holders
-   */ 
-  mapping (address => uint256) internal accounts;
-  
-  /**
-   * Mapping from addresses of token holders to the mapping of addresses of
-   * spenders to the allowances set by these token holders to these spenders.
-   */
-  mapping (address => mapping (address => uint256)) internal allowances;
-
+    event Transfer(address indexed from, address indexed to, uint tokens);
+    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
 }
 
-/**
- * Pinmo Token Smart Contract
- */ 
-contract PinmoToken is AbstractToken {
-    
-    /**
-     * Address of the owner of this smart contract
-     */ 
-    address private owner;
-    
-    /**
-     * total number of tokens in circulation
-     */ 
-    uint256 tokenCount;
-    
-    /**
-     * True if tokens are currently frozen for transfer or false if they are
-     * not frozen
-     */ 
-    bool frozen = false;
-    
-    /**
-     * Create a new Pinmo Token Smart Contract with the total amount of tokens
-     * issued and a given msg.sender, as well, this makes the msg.sender they
-     * owner of this smart contract
-     * 
-     * @param _tokenCount total number of tokens to be issued and given to the
-     * msg.sender
-     */ 
-    constructor (uint256 _tokenCount) public {
-        owner = msg.sender;
-        tokenCount = _tokenCount;
-        accounts [msg.sender] = _tokenCount;
-    }
-    
-    /**
-     * Function to get the name of this token
-     * 
-     * @return the name of this token
-     */ 
-    function name () public pure returns (string result) {
-    return "Pinmo Token";
-    }
-    /**
-     * Function to ge the symbol of this token
-     * 
-     * @return symbol for this token
-     */ 
-    function symbol () public pure returns (string result) {
-    return "PMT";
-    }
-    
-    /**
-     * Function to get the number of decimals
-     * 
-     * @return number of decimals for this token
-     */ 
-    function decimals () public pure returns (uint8 result) {
-    return 18;
-    }
 
-    /**
-     * Function to get the total number of tokens in circulation
-     * 
-     * @return total number of tokens in circulation
-     */ 
-    function totalSupply () public view returns (uint256 supply) {
-        return tokenCount;
-    }
-    
-    /**
-     * Function to check if the transfer is frozen or not to
-     * 
-     * @param _to address where the tokens are going to
-     * 
-     * @param _value amount of tokens that were transfered.
-     * 
-     * @return true if the tokens are frozen and false if they are not
-     */ 
-    function transfer (address _to, uint256 _value)
-    public returns (bool success) {
-    if (frozen) return false;
-    else return AbstractToken.transfer (_to, _value);
-    }
-    
-    /**
-     * Function to check if the transfer is frozen or not from
-     * 
-     * @param _from address where the tokens were transfered from
-     * 
-     * @param _to address where the tokens are going to
-     * 
-     * @param _value amount of tokens that were transfered
-     * 
-     * @return true if the tokens are frozen and false if they are not
-     */ 
-    function transferFrom (address _from, address _to, uint256 _value)
-    public returns (bool success) {
-    if (frozen) return false;
-    else return AbstractToken.transferFrom (_from, _to, _value);
-  }
-  
-  /**
-   * Function to check the allowance was approved
-   * 
-   * @param _spender address from the person that spend the tokens
-   * 
-   * @param _currentValue total value of the tokens before approving
-   * 
-   * @param _newValue total value of the tokens after approving
-   * 
-   * @return true if the msg.sender is equal to the current value and
-   * false if there is a difference on this.
-   */ 
-    function approve (address _spender, uint256 _currentValue, uint256 _newValue)
-    public returns (bool success) {
-    if (allowance (msg.sender, _spender) == _currentValue)
-      return approve (_spender, _newValue);
-    else return false;
-  }
-  
-  /**
-   * Function to set a new owner of this contract
-   * 
-   * @param _newOwner address of the new owner approinted by the current owner
-   */ 
-  function setOwner (address _newOwner) public {
-    require (msg.sender == owner);
-
-    owner = _newOwner;
-  }
-  
-  /**
-   * Function to freeze all the transfers
-   * May only be called by smart contract owner
-   */ 
-  function freezeTransfers () public {
-    require (msg.sender == owner);
-
-    if (!frozen) {
-      frozen = true;
-      emit Freeze ();
-    }
-    
-    /**
-     * Unfreeze token transfers 
-     * May only be calles by the Smart Contract owner
-     */ 
-  }function unfreezeTransfers () public {
-    require (msg.sender == owner);
-
-    if (frozen) {
-      frozen = false;
-      emit Unfreeze ();
-    }
-  }
-  
-  /**
-   * Logged when token transfers were frozen
-   */ 
-  
-  event Freeze ();
-  
-  /**
-   * Logged when token transfers were unfrozen
-   */ 
-  event Unfreeze ();
-  
+// ----------------------------------------------------------------------------
+// Contract function to receive approval and execute function in one call
+//
+// Borrowed from MiniMeToken
+// ----------------------------------------------------------------------------
+contract ApproveAndCallFallBack {
+    function receiveApproval(address from, uint256 tokens, address token, bytes data) public;
 }
 
-/**
- * Multisignature wallet to approve transfers within wallets as a safe guard
- * that multiple approvals are needed
- */ 
-contract MultiSigWallet { // this is safe to implement but it consumes gas 
-    address private _owner;
+
+// ----------------------------------------------------------------------------
+// Admin contract
+// ----------------------------------------------------------------------------
+contract Administration {
+    event AdminTransferred(address indexed _from, address indexed _to);
+    event Pause();
+    event Unpause();
     
-    /**
-     * mapping from addresses of token owners
-     */ 
-    mapping(address => uint8) private _owners; 
-    
-    /**
-     * Constant value for minimum number of signatures
-     * uint for the transaction id storage as private
-     */ 
-    uint constant MIN_SIGNATURES = 2; // number of signatures required 
-    uint private _transactionsIdx;
-    
-    /**
-     * the base structure for the transaction
-     * @param from address that where the transfer is initiated
-     * 
-     * @param to address where the tokens are going to be transfer
-     * 
-     * @param amount total number of tokens part of this transaction
-     * 
-     * @param signatureCount total number of signatures provided by the owners
-     * 
-     * @param signatures mapping that contains all the signatures of the
-     * owners
-     */ 
-    struct Transaction {
-        address from;
-        address to;
-        uint amount;
-        uint8 signatureCount;
-        mapping (address => uint8) signatures;
-    }
-    
-    /**
-     * mapping of uint transactions that contains all the pending transactions
-     * @param _transactions number of transactions in the queue
-     * 
-     * @param _pendingTransactions number of pending transactions in the
-     * queue
-     */ 
-    mapping (uint => Transaction) private _transactions;
-    uint[] private _pendingTransactions;
-    
-    /**
-     * Modifier to verified the owners needs to be equal to the msg.sender
-     */ 
-    modifier isOwner(){
-        require(msg.sender == _owner);
+    address public adminAddress = 0x9d3177a1363702682EA8913Cb4A8a0FBDa00Ba75;
+
+    bool public paused = false;
+
+    modifier onlyAdmin() {
+        require(msg.sender == adminAddress);
         _;
     }
-    
-    /**
-     * Modifier to check the owner is a valid owner
-     */ 
-    
-    modifier validOwner(){
-        require(msg.sender == _owner || _owners[msg.sender] == 1);
+
+    function setAdmin(address _newAdmin) public onlyAdmin {
+        require(_newAdmin != address(0));
+        AdminTransferred(adminAddress, _newAdmin);
+        adminAddress = _newAdmin;
+        
+    }
+
+    function withdrawBalance() external onlyAdmin {
+        adminAddress.transfer(this.balance);
+    }
+
+    modifier whenNotPaused() {
+        require(!paused);
         _;
     }
-    
-    /**
-     * Event to log the deposit of DepositFunds
-     * @param from address where the funds are coming
-     * 
-     * @param amount of tokens that awere deposit
-     */ 
-    
-    event DepositFunds(address from, uint amount);
-    
-    /**
-     * Event to log when the transaction was created
-     * @param from address where the transaction originated
-     * 
-     * @param to address where the transaction finalized
-     * 
-     * @param amount of tokens that are subject of the transaction
-     */ 
-    event TransactionCreated(address from, address to, uint amount, 
-    uint transactionId);
-    
-    /**
-     * Event to log when the transaction was completed
-     * @param from addtress where the transaction originated
-     * 
-     * @param to address where the transaction finalized
-     * 
-     * @param amount of tokens that are subject of the transaction
-     */ 
-    event TransactionCompleted(address from, address to, uint amount, 
-    uint transactionId);
-    
-    /**
-     * Event to log who signed the transaction
-     * 
-     * @param by address of the owner that signed and approved the transaction
-     * 
-     * @param transactionId id of the transaction that was signed
-     */ 
-    event TransactionSigned(address by, uint transactionId);
 
-    /**
-     * Constructor that validates the owner
-     */ 
-    constructor() MultiSigWallet() // can only be tested in the real environment
-        public {
-            _owner = msg.sender;
+    modifier whenPaused() {
+        require(paused);
+        _;
     }
-    
-    /**
-     * Function to add an owner to sign transactions
-     * 
-     * @param owner address that is going to get authorized to sign 
-     * transactions
-     */ 
-    function addOwner(address owner)
-        isOwner
-        public {
-            _owners[owner] = 1;    
-        }
-    /**
-     * Function to remove an owner to sign transactions
-     * 
-     * @param owner address that is going to be unauthorized to sign
-     * transactions
-     */ 
-    function removeOwner(address owner)
-        isOwner
-        public {
-            _owners[owner] = 0;
-        }
-    /**
-     * function to make the DepositFunds payable
-     */ 
-    function ()
-    public
-    payable {
-        emit DepositFunds(msg.sender, msg.value);
+
+    function pause() public onlyAdmin whenNotPaused returns(bool) {
+        paused = true;
+        Pause();
+        return true;
     }
-    /**
-     * Function to withdraw money from the account
-     * 
-     * @param amount total tokens that want to be withdraw
-     */ 
-    function withdraw(uint amount)
-    
-    public {
-        transferTo(msg.sender, amount);
+
+    function unpause() public onlyAdmin whenPaused returns(bool) {
+        paused = false;
+        Unpause();
+        return true;
     }
-    
-    /**
-     * Function to transfer to a valid owner
-     * @param to address where the tokens are going to go to
-     * 
-     * @param amount total amount of tokens that are going to be transfer
-     */ 
-    function transferTo(address to, uint amount)
-    validOwner
-    public {
-        require(address(this).balance >= amount);
-        uint transactionId = _transactionsIdx++;
-        Transaction memory transaction;
-        transaction.from = msg.sender;
-        transaction.to = to;
-        transaction.amount = amount;
-        transaction.signatureCount = 0;
-        
-        _transactions[transactionId] = transaction;
-        _pendingTransactions.push(transactionId);
-        
-        emit TransactionCreated(msg.sender, to, amount, transactionId);
-    }
-    
-    /**
-     * Function to obtain the pending transactions that need to be signed
-     */ 
-    function getPendingTransactions()
-        view
-        validOwner
-        public
-        returns (uint[]) {
-            return _pendingTransactions;
-        }
-    
-    /**
-     * Function to sign the transactions that are either pending or current
-     * 
-     * @param transactionId that needs to be signed
-     */ 
-    function signTransaction(uint transactionId)
-        validOwner
-        public{
-            Transaction storage transaction = _transactions[transactionId];
-            // Transaction must exist
-            require(0x0 != transaction.from);
-            // Creator cannot sign the transaction 
-            require(msg.sender != transaction.from);
-            // Cannot sign a transaction more than once
-            require(transaction.signatures[msg.sender] != 1);
-            
-            transaction.signatures[msg.sender] == 1;
-            transaction.signatureCount++;
-            
-            emit TransactionSigned(msg.sender, transactionId);
-            
-            if(transaction.signatureCount >= MIN_SIGNATURES){
-                require(address(this).balance >= transaction.amount);
-                transaction.to.transfer(transaction.amount);
-                emit TransactionCompleted(transaction.from, transaction.to, transaction.amount, transactionId);
-                deleteTransaction(transactionId);
-            }
-        }
-        
-        /**
-         * Function to delete any pending transactions
-         * 
-         * @param transactionId that needs to be deleted
-         */ 
-        function deleteTransaction(uint transactionId)
-            validOwner
-            public {
-                uint8 replace = 0;
-                for (uint i = 0; i < _pendingTransactions.length; i++){
-                    if(1 == replace){
-                        _pendingTransactions[i-1] = _pendingTransactions[i];
-                    } else if(transactionId == _pendingTransactions[i]){
-                        replace = 1;
-                    }
-                }
-                delete _pendingTransactions[_pendingTransactions.length -1];
-                _pendingTransactions.length--;
-                delete _transactions[transactionId];
-            }
-            
-            /**
-             * Function to obtain the balance of a given wallet
-             * 
-             * @return balance of a given address
-             */ 
-            function walletBalance()
-            constant
-            public
-            returns (uint){
-                return address(this).balance;
-            }
+
+    uint oneEth = 1 ether;
 }
 
-/**
- * Escrow function to hold tokens after reviewing the transactions
- */ 
-contract Escrow {
-    uint balance;
-    address public buyer;
-    address public seller;
-    address private escrow;
-    uint private start;
-    bool buyerOk;
-    bool sellerOk;
+contract PinMoCrown is ERC20Interface, Administration, SafeMath {
+    event CrownTransfer(address indexed from, address indexed to, uint tokens);
     
-    /**
-     * constructor that contains the buyer and seller addresses
-     */ 
-    constructor (address buyer_address, address seller_address) 
-    public{
-        buyer = buyer_address;
-        seller = seller_address;
-        escrow = msg.sender;
-        start = now;
+    string public crownSymbol;
+    string public crownName;
+    uint8 public crownDecimals;
+    uint public _crownTotalSupply;
+
+    mapping(address => uint) crownBalances;
+    mapping(address => bool) crownFreezed;
+    mapping(address => uint) crownFreezeAmount;
+    mapping(address => uint) crownUnlockTime;
+
+
+    // ------------------------------------------------------------------------
+    // Constructor
+    // ------------------------------------------------------------------------
+    function PinMoCrown() public {
+        crownSymbol = "PMC";
+        crownName = "PinMo Crown";
+        crownDecimals = 0;
+        _crownTotalSupply = 100000;
+        crownBalances[adminAddress] = _crownTotalSupply;
+        CrownTransfer(address(0), adminAddress, _crownTotalSupply);
     }
-    /**
-     * Function to accept the payment
-     */ 
-    function accept() payable public{
-        if (msg.sender == buyer){
-            buyerOk = true;
-        } else if (msg.sender == seller){
-            sellerOk = true;
-        }
-        if (buyerOk && sellerOk){
-            payBalance();
-        } else if (buyerOk && !!sellerOk && now > start + 30 days){
-            // Freeze 30 days before release to buyer. The customer needs to remember
-            // to call this method after freeze period.
-            selfdestruct(buyer);
-        }
+
+
+    // ------------------------------------------------------------------------
+    // Total supply
+    // ------------------------------------------------------------------------
+    function crownTotalSupply() public constant returns (uint) {
+        return _crownTotalSupply  - crownBalances[address(0)];
     }
-    /**
-     * Function to pay the hold balance if it hasn't been paid
-     */ 
-    function payBalance() private {
-        escrow.transfer(address(this).balance / 100);
-        if (seller.send(address(this).balance)){
-            balance = 0;
+
+
+    // ------------------------------------------------------------------------
+    // Get the token balance for account tokenOwner
+    // ------------------------------------------------------------------------
+    function crownBalanceOf(address tokenOwner) public constant returns (uint balance) {
+        return crownBalances[tokenOwner];
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Transfer the balance from token owner's account to to account
+    // - Owner's account must have sufficient balance to transfer
+    // - 0 value transfers are allowed
+    // ------------------------------------------------------------------------
+    function crownTransfer(address to, uint tokens) public whenNotPaused returns (bool success) {
+        if(crownFreezed[msg.sender] == false){
+            crownBalances[msg.sender] = safeSub(crownBalances[msg.sender], tokens);
+            crownBalances[to] = safeAdd(crownBalances[to], tokens);
+            CrownTransfer(msg.sender, to, tokens);
         } else {
-            revert();
+            if(crownBalances[msg.sender] > crownFreezeAmount[msg.sender]) {
+                require(tokens <= safeSub(crownBalances[msg.sender], crownFreezeAmount[msg.sender]));
+                crownBalances[msg.sender] = safeSub(crownBalances[msg.sender], tokens);
+                crownBalances[to] = safeAdd(crownBalances[to], tokens);
+                CrownTransfer(msg.sender, to, tokens);
+            }
+        }
+            
+        return true;
+    }
+
+    // ------------------------------------------------------------------------
+    // Mint Tokens
+    // ------------------------------------------------------------------------
+    function mintCrown(uint amount) public onlyAdmin {
+        crownBalances[msg.sender] = safeAdd(crownBalances[msg.sender], amount);
+        _crownTotalSupply = safeAdd(_crownTotalSupply, amount);
+    }
+
+    // ------------------------------------------------------------------------
+    // Burn Tokens
+    // ------------------------------------------------------------------------
+    function burnCrown(uint amount) public onlyAdmin {
+        crownBalances[msg.sender] = safeSub(crownBalances[msg.sender], amount);
+        _crownTotalSupply = safeSub(_crownTotalSupply, amount);
+    }
+    
+    // ------------------------------------------------------------------------
+    // Freeze Tokens
+    // ------------------------------------------------------------------------
+    function crownFreeze(address user, uint amount, uint period) public onlyAdmin {
+        require(crownBalances[user] >= amount);
+        crownFreezed[user] = true;
+        crownUnlockTime[user] = uint(now) + period;
+        crownFreezeAmount[user] = amount;
+    }
+    
+    function _crownFreeze(uint amount) internal {
+        require(crownFreezed[msg.sender] == false);
+        require(crownBalances[msg.sender] >= amount);
+        crownFreezed[msg.sender] = true;
+        crownUnlockTime[msg.sender] = uint(-1);
+        crownFreezeAmount[msg.sender] = amount;
+    }
+
+    // ------------------------------------------------------------------------
+    // UnFreeze Tokens
+    // ------------------------------------------------------------------------
+    function crownUnFreeze() public whenNotPaused {
+        require(crownFreezed[msg.sender] == true);
+        require(crownUnlockTime[msg.sender] < uint(now));
+        crownFreezed[msg.sender] = false;
+        crownFreezeAmount[msg.sender] = 0;
+    }
+    
+    function _crownUnFreeze(uint _amount) internal {
+        require(crownFreezed[msg.sender] == true);
+        crownUnlockTime[msg.sender] = 0;
+        crownFreezed[msg.sender] = false;
+        crownFreezeAmount[msg.sender] = safeSub(crownFreezeAmount[msg.sender], _amount);
+    }
+    
+    function crownIfFreeze(address user) public view returns (
+        bool check, 
+        uint amount, 
+        uint timeLeft
+    ) {
+        check = crownFreezed[user];
+        amount = crownFreezeAmount[user];
+        timeLeft = crownUnlockTime[user] - uint(now);
+    }
+
+}
+
+//
+contract PinMoToken is PinMoCrown {
+    event PartnerCreated(uint indexed partnerId, address indexed partner, uint indexed amount, uint singleTrans, uint durance);
+    event RewardDistribute(uint indexed postId, uint partnerId, address indexed user, uint indexed amount);
+    
+    event VipAgreementSign(uint indexed vipId, address indexed vip, uint durance, uint frequence, uint salar);
+    event SalaryReceived(uint indexed vipId, address indexed vip, uint salary, uint indexed timestamp);
+    
+    string public symbol;
+    string public  name;
+    uint8 public decimals;
+    uint public _totalSupply;
+    uint public minePool;
+
+//Advertising partner can construct their rewarding pool for each campaign
+    struct Partner {
+        address admin;
+        uint tokenPool;
+        uint singleTrans;
+        uint timestamp;
+        uint durance;
+    }
+//regular users
+    struct Poster {
+        address poster;
+        bytes32 hashData;
+        uint reward;
+    }
+//Influencers do have additional privileges such as salary
+    struct Vip {
+        address vip;
+        uint durance;
+        uint frequence;
+        uint salary;
+        uint timestamp;
+    }
+    
+    Partner[] partners;
+    Vip[] vips;
+
+    modifier onlyPartner(uint _partnerId) {
+        require(partners[_partnerId].admin == msg.sender);
+        require(partners[_partnerId].tokenPool > uint(0));
+        uint deadline = safeAdd(partners[_partnerId].timestamp, partners[_partnerId].durance);
+        require(deadline > now);
+        _;
+    }
+    
+    modifier onlyVip(uint _vipId) {
+        require(vips[_vipId].vip == msg.sender);
+        require(vips[_vipId].durance > now);
+        require(vips[_vipId].timestamp < now);
+        _;
+    }
+
+    mapping(address => uint) balances;
+    mapping(address => mapping(address => uint)) allowed;
+    mapping(address => bool) freezed;
+    mapping(address => uint) freezeAmount;
+    mapping(address => uint) unlockTime;
+    
+    mapping(uint => Poster[]) PartnerIdToPosterList;
+
+
+    // ------------------------------------------------------------------------
+    // Constructor
+    // ------------------------------------------------------------------------
+    function PinMoToken() public {
+        symbol = "pinmo";
+        name = "PinMo Token";
+        decimals = 18;
+        _totalSupply = 273000000000000000000000000;
+        
+    //rewarding pool
+        minePool = 136500000000000000000000000;
+        balances[adminAddress] = _totalSupply - minePool;
+        Transfer(address(0), adminAddress, _totalSupply);
+    }
+    
+    // ------------------------------------------------------------------------
+    // Total supply
+    // ------------------------------------------------------------------------
+    function totalSupply() public constant returns (uint) {
+        return _totalSupply  - balances[address(0)];
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Get the token balance for account tokenOwner
+    // ------------------------------------------------------------------------
+    function balanceOf(address tokenOwner) public constant returns (uint balance) {
+        return balances[tokenOwner];
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Transfer the balance from token owner's account to to account
+    // - Owner's account must have sufficient balance to transfer
+    // - 0 value transfers are allowed
+    // ------------------------------------------------------------------------
+    function transfer(address to, uint tokens) public returns (bool success) {
+        if(freezed[msg.sender] == false){
+            balances[msg.sender] = safeSub(balances[msg.sender], tokens);
+            balances[to] = safeAdd(balances[to], tokens);
+            Transfer(msg.sender, to, tokens);
+        } else {
+            if(balances[msg.sender] > freezeAmount[msg.sender]) {
+                require(tokens <= safeSub(balances[msg.sender], freezeAmount[msg.sender]));
+                balances[msg.sender] = safeSub(balances[msg.sender], tokens);
+                balances[to] = safeAdd(balances[to], tokens);
+                Transfer(msg.sender, to, tokens);
+            }
+        }
+            
+        return true;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Token owner can approve for spender to transferFrom(...) tokens
+    // from the token owner's account
+    //
+    // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
+    // recommends that there are no checks for the approval double-spend attack
+    // as this should be implemented in user interfaces 
+    // ------------------------------------------------------------------------
+    function approve(address spender, uint tokens) public returns (bool success) {
+        require(freezed[msg.sender] != true);
+        allowed[msg.sender][spender] = tokens;
+        Approval(msg.sender, spender, tokens);
+        return true;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Transfer tokens from the from account to the to account
+    // 
+    // The calling account must already have sufficient tokens approve(...)-d
+    // for spending from the from account and
+    // - From account must have sufficient balance to transfer
+    // - Spender must have sufficient allowance to transfer
+    // - 0 value transfers are allowed
+    // ------------------------------------------------------------------------
+    function transferFrom(address from, address to, uint tokens) public returns (bool success) {
+        balances[from] = safeSub(balances[from], tokens);
+        allowed[from][msg.sender] = safeSub(allowed[from][msg.sender], tokens);
+        balances[to] = safeAdd(balances[to], tokens);
+        Transfer(from, to, tokens);
+        return true;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Returns the amount of tokens approved by the owner that can be
+    // transferred to the spender's account
+    // ------------------------------------------------------------------------
+    function allowance(address tokenOwner, address spender) public constant returns (uint remaining) {
+        require(freezed[msg.sender] != true);
+        return allowed[tokenOwner][spender];
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Token owner can approve for spender to transferFrom(...) tokens
+    // from the token owner's account. The spender contract function
+    // receiveApproval(...) is then executed
+    // ------------------------------------------------------------------------
+    function approveAndCall(address spender, uint tokens, bytes data) public returns (bool success) {
+        require(freezed[msg.sender] != true);
+        allowed[msg.sender][spender] = tokens;
+        Approval(msg.sender, spender, tokens);
+        ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, this, data);
+        return true;
+    }
+
+    // ------------------------------------------------------------------------
+    // Mint Tokens
+    // ------------------------------------------------------------------------
+    function _mint(uint amount, address receiver) internal {
+        require(minePool >= amount);
+        minePool = safeSub(minePool, amount);
+        balances[receiver] = safeAdd(balances[receiver], amount);
+        Transfer(address(0), receiver, amount);
+    }
+    
+    function mint(uint amount) public onlyAdmin {
+        require(minePool >= amount);
+        minePool = safeSub(minePool, amount);
+        balances[msg.sender] = safeAdd(balances[msg.sender], amount);
+        Transfer(address(0), msg.sender, amount);
+    }
+    
+    // ------------------------------------------------------------------------
+    // Freeze Tokens
+    // ------------------------------------------------------------------------
+    function freeze(address user, uint amount, uint period) public onlyAdmin {
+        require(balances[user] >= amount);
+        freezed[user] = true;
+        unlockTime[user] = uint(now) + period;
+        freezeAmount[user] = amount;
+    }
+
+    // ------------------------------------------------------------------------
+    // UnFreeze Tokens
+    // ------------------------------------------------------------------------
+    function unFreeze() public {
+        require(freezed[msg.sender] == true);
+        require(unlockTime[msg.sender] < uint(now));
+        freezed[msg.sender] = false;
+        freezeAmount[msg.sender] = 0;
+    }
+    
+    function ifFreeze(address user) public view returns (
+        bool check, 
+        uint amount, 
+        uint timeLeft
+    ) {
+        check = freezed[user];
+        amount = freezeAmount[user];
+        timeLeft = unlockTime[user] - uint(now);
+    }
+    
+    // ------------------------------------------------------------------------
+    // Partner Authorization
+    // ------------------------------------------------------------------------
+    function createPartner(address _partner, uint _amount, uint _singleTrans, uint _durance) public onlyAdmin returns (uint) {
+        Partner memory _Partner = Partner({
+            admin: _partner,
+            tokenPool: _amount,
+            singleTrans: _singleTrans,
+            timestamp: uint(now),
+            durance: _durance
+        });
+        uint newPartnerId = partners.push(_Partner) - 1;
+        PartnerCreated(newPartnerId, _partner, _amount, _singleTrans, _durance);
+        
+        return newPartnerId;
+    }
+    
+    function partnerTransfer(uint _partnerId, bytes32 _data, address _to, uint _amount) public onlyPartner(_partnerId) whenNotPaused returns (bool) {
+        require(_amount <= partners[_partnerId].singleTrans);
+        partners[_partnerId].tokenPool = safeSub(partners[_partnerId].tokenPool, _amount);
+        Poster memory _Poster = Poster ({
+           poster: _to,
+            hashData: _data,
+           reward: _amount
+        });
+        uint newPostId = PartnerIdToPosterList[_partnerId].push(_Poster) - 1;
+        _mint(_amount, _to);
+        RewardDistribute(newPostId, _partnerId, _to, _amount);
+        return true;
+    }
+    
+    function setPartnerPool(uint _partnerId, uint _amount) public onlyAdmin {
+        partners[_partnerId].tokenPool = _amount;
+    }
+    
+    function setPartnerDurance(uint _partnerId, uint _durance) public onlyAdmin {
+        partners[_partnerId].durance = uint(now) + _durance;
+    }
+    
+    function getPartnerInfo(uint _partnerId) public view returns (
+        address admin,
+        uint tokenPool,
+        uint timeLeft
+    ) {
+        Partner memory _Partner = partners[_partnerId];
+        admin = _Partner.admin;
+        tokenPool = _Partner.tokenPool;
+        if (_Partner.timestamp + _Partner.durance > uint(now)) {
+            timeLeft = _Partner.timestamp + _Partner.durance - uint(now);
+        } else {
+            timeLeft = 0;
         }
         
     }
-    /**
-     * Function to deposit the balance of the transaction
-     */ 
-    function deposit() public payable {
-        if(msg.sender == buyer){
-            balance += msg.value;
+
+    function getPosterInfo(uint _partnerId, uint _posterId) public view returns (
+        address poster,
+        bytes32 hashData,
+        uint reward
+    ) {
+        Poster memory _Poster = PartnerIdToPosterList[_partnerId][_posterId];
+        poster = _Poster.poster;
+        hashData = _Poster.hashData;
+        reward = _Poster.reward;
+    }
+
+    // ------------------------------------------------------------------------
+    // Vip Agreement
+    // ------------------------------------------------------------------------
+    function createVip(address _vip, uint _durance, uint _frequence, uint _salary) public onlyAdmin returns (uint) {
+        Vip memory _Vip = Vip ({
+           vip: _vip,
+           durance: uint(now) + _durance,
+           frequence: _frequence,
+           salary: _salary,
+           timestamp: now + _frequence
+        });
+        uint newVipId = vips.push(_Vip) - 1;
+        VipAgreementSign(newVipId, _vip, _durance, _frequence, _salary);
+        
+        return newVipId;
+    }
+    
+    function mineSalary(uint _vipId) public onlyVip(_vipId) whenNotPaused returns (bool) {
+        Vip storage _Vip = vips[_vipId];
+        _mint(_Vip.salary, _Vip.vip);
+        _Vip.timestamp = safeAdd(_Vip.timestamp, _Vip.frequence);
+        
+        SalaryReceived(_vipId, _Vip.vip, _Vip.salary, _Vip.timestamp);
+        return true;
+    }
+    
+    function deleteVip(uint _vipId) public onlyAdmin {
+        delete vips[_vipId];
+    }
+    
+    function getVipInfo(uint _vipId) public view returns (
+        address vip,
+        uint durance,
+        uint frequence,
+        uint salary,
+        uint nextSalary,
+        string log
+    ) {
+        Vip memory _Vip = vips[_vipId];
+        vip = _Vip.vip;
+        durance = _Vip.durance;
+        frequence = _Vip.frequence;
+        salary = _Vip.salary;
+        if(_Vip.timestamp >= uint(now)) {
+            nextSalary = safeSub(_Vip.timestamp, uint(now));
+            log = "Please Wait";
+        } else {
+            nextSalary = 0;
+            log = "Pick Up Your Salary Now";
         }
     }
-    /**
-     * Function to cancel the balance that was hold
-     */ 
-    function cancel() public {
-        if(msg.sender == buyer){
-            buyerOk = false;
-        }else if (msg.sender == seller){
-            sellerOk = false;
-        }
-        if(!buyerOk && !sellerOk){
-            selfdestruct(buyer);
-        }
+
+    // ------------------------------------------------------------------------
+    // Accept ETH
+    // ------------------------------------------------------------------------
+    function () public payable {
     }
-    /**
-     * Function to kill the escrow function on this transaction
-     */ 
-    function kill() public payable {
-        if(msg.sender == escrow){
-            selfdestruct(buyer);
-        }
+
+    // ------------------------------------------------------------------------
+    // Owner can transfer out any accidentally sent ERC20 tokens
+    // ------------------------------------------------------------------------
+    function transferAnyERC20Token(address tokenAddress, uint tokens) public onlyAdmin returns (bool success) {
+        return ERC20Interface(tokenAddress).transfer(adminAddress, tokens);
     }
 }
 
+contract PinMo is PinMoToken {
+    event MembershipUpdate(address indexed member, uint indexed level);
+    event MembershipCancel(address indexed member);
+    event PinMoTradeCreated(uint indexed tradeId, bool indexed ifCrown, uint crown, uint token);
+    event TradeCancel(uint indexed tradeId);
+    event TradeComplete(uint indexed tradeId, address indexed buyer, address indexed seller, uint crown, uint token);
+    event Mine(address indexed miner, uint indexed salary);
+    
+    mapping (address => uint) MemberToLevel;
+    mapping (address => uint) MemberToCrown;
+    mapping (address => uint) MemberToToken;
+    mapping (address => uint) MemberToTime;
+    
+    uint public period = 30 days;
+    
+    uint[4] public boardMember =[
+        0,
+        5,
+        25,
+        100
+    ];
+
+    uint[4] public salary = [
+        0,
+        2000000000000000000000,
+        6000000000000000000000,
+        12000000000000000000000
+    ];
+    
+    struct PinMoTrade {
+        address seller;
+        bool ifCrown;
+        uint crown;
+        uint token;
+    }
+    
+    PinMoTrade[] pinMoTrades;
+    
+    function boardMemberApply(uint _level) public whenNotPaused {
+        require(_level > 0 && _level <= 3);
+        require(crownBalances[msg.sender] >= boardMember[_level]);
+        _crownFreeze(boardMember[_level]);
+        MemberToLevel[msg.sender] = _level;
+        if(MemberToTime[msg.sender] == 0) {
+            MemberToTime[msg.sender] = uint(now);
+        }
+        
+        MembershipUpdate(msg.sender, _level);
+    }
+    
+    function getBoardMember(address _member) public view returns (
+        uint level,
+        uint timeLeft
+    ) {
+        level = MemberToLevel[_member];
+        if(MemberToTime[_member] > uint(now)) {
+            timeLeft = safeSub(MemberToTime[_member], uint(now));
+        } else {
+            timeLeft = 0;
+        }
+    }
+    
+    function boardMemberCancel() public whenNotPaused {
+        require(MemberToLevel[msg.sender] > 0);
+        _crownUnFreeze(boardMember[MemberToLevel[msg.sender]]);
+        
+        MemberToLevel[msg.sender] = 0;
+        MembershipCancel(msg.sender);
+    }
+    
+    function createPinMoTrade(bool _ifCrown, uint _crown, uint _token) public whenNotPaused returns (uint) {
+        if(_ifCrown) {
+            require(crownBalances[msg.sender] >= _crown);
+            crownBalances[msg.sender] = safeSub(crownBalances[msg.sender], _crown);
+            MemberToCrown[msg.sender] = _crown;
+            PinMoTrade memory pinMo = PinMoTrade({
+               seller: msg.sender,
+               ifCrown:_ifCrown,
+               crown: _crown,
+               token: _token
+            });
+            uint newCrownTradeId = pinMoTrades.push(pinMo) - 1;
+            PinMoTradeCreated(newCrownTradeId, _ifCrown, _crown, _token);
+            
+            return newCrownTradeId;
+        } else {
+            require(balances[msg.sender] >= _token);
+            balances[msg.sender] = safeSub(balances[msg.sender], _token);
+            MemberToToken[msg.sender] = _token;
+            PinMoTrade memory _pinMo = PinMoTrade({
+               seller: msg.sender,
+               ifCrown:_ifCrown,
+               crown: _crown,
+               token: _token
+            });
+            uint newTokenTradeId = pinMoTrades.push(_pinMo) - 1;
+            PinMoTradeCreated(newTokenTradeId, _ifCrown, _crown, _token);
+            
+            return newTokenTradeId;
+        }
+    }
+    
+    function cancelTrade(uint _tradeId) public whenNotPaused {
+        PinMoTrade memory pinMo = pinMoTrades[_tradeId];
+        require(pinMo.seller == msg.sender);
+        if(pinMo.ifCrown){
+            crownBalances[msg.sender] = safeAdd(crownBalances[msg.sender], pinMo.crown);
+            MemberToCrown[msg.sender] = 0;
+        } else {
+            balances[msg.sender] = safeAdd(balances[msg.sender], pinMo.token);
+            MemberToToken[msg.sender] = 0;
+        }
+        delete pinMoTrades[_tradeId];
+        TradeCancel(_tradeId);
+    }
+    
+    function trade(uint _tradeId) public whenNotPaused {
+        PinMoTrade memory pinMo = pinMoTrades[_tradeId];
+        if(pinMo.ifCrown){
+            crownBalances[msg.sender] = safeAdd(crownBalances[msg.sender], pinMo.crown);
+            MemberToCrown[pinMo.seller] = 0;
+            transfer(pinMo.seller, pinMo.token);
+            delete pinMoTrades[_tradeId];
+            TradeComplete(_tradeId, msg.sender, pinMo.seller, pinMo.crown, pinMo.token);
+        } else {
+            balances[msg.sender] = safeAdd(balances[msg.sender], pinMo.token);
+            MemberToToken[pinMo.seller] = 0;
+            crownTransfer(pinMo.seller, pinMo.crown);
+            delete pinMoTrades[_tradeId];
+            TradeComplete(_tradeId, msg.sender, pinMo.seller, pinMo.crown, pinMo.token);
+        }
+    }
+    
+    function mine() public whenNotPaused {
+        uint level = MemberToLevel[msg.sender];
+        require(MemberToTime[msg.sender] < uint(now)); 
+        require(level > 0);
+        _mint(salary[level], msg.sender);
+        MemberToTime[msg.sender] = safeAdd(MemberToTime[msg.sender], period);
+        Mine(msg.sender, salary[level]);
+    }
+    
+    function setBoardMember(uint one, uint two, uint three) public onlyAdmin {
+        boardMember[1] = one;
+        boardMember[2] = two;
+        boardMember[3] = three;
+    }
+    
+    function setSalary(uint one, uint two, uint three) public onlyAdmin {
+        salary[1] = one;
+        salary[2] = two;
+        salary[3] = three;
+    }
+    
+    function setPeriod(uint time) public onlyAdmin {
+        period = time;
+    }
+    
+    function getTrade(uint _tradeId) public view returns (
+        address seller,
+        bool ifCrown,
+        uint crown,
+        uint token 
+    ) {
+        PinMoTrade memory _pinMo = pinMoTrades[_tradeId];
+        seller = _pinMo.seller;
+        ifCrown = _pinMo.ifCrown;
+        crown = _pinMo.crown;
+        token = _pinMo.token;
+    }
+    
+    function WhoIsTheContractMaster() public pure returns (string) {
+        return "Alexander The Exlosion";
+    }
+}
